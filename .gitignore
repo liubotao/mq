@@ -1,2 +1,5 @@
-mq.iml
+*.iml
 .idea/
+*.DS_Store
+target/
+src/
