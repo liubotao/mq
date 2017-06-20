@@ -23,11 +23,11 @@ public class NettyServer {
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap();
             serverBootstrap.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                    .channel(NioServerSocketChannel.class).
+                    childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
-                            socketChannel.pipeline().addLast(new DiscardServerHandler());
+                            socketChannel.pipeline().addLast(new EchoServerHandler());
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
@@ -41,6 +41,13 @@ public class NettyServer {
     }
 }
 
+class EchoServerHandler extends ChannelInboundHandlerAdapter {
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        ctx.write(msg);
+        ctx.flush();
+    }
+}
 
 class DiscardServerHandler extends ChannelInboundHandlerAdapter {
     @Override
