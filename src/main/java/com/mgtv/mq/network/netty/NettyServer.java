@@ -47,6 +47,12 @@ class EchoServerHandler extends ChannelInboundHandlerAdapter {
         ctx.write(msg);
         ctx.flush();
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
+        ctx.close();
+    }
 }
 
 class DiscardServerHandler extends ChannelInboundHandlerAdapter {
