@@ -12,9 +12,7 @@ import org.slf4j.LoggerFactory;
 
 public class NettyClient {
 
-
     public static void main(String[] args) throws Exception {
-
         String host = "127.0.0.1";
         int port = 9999;
         EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
