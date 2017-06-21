@@ -1,5 +1,6 @@
 package com.mgtv.mq.network.netty;
 
+import com.mgtv.mq.protocol.Command;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -27,7 +28,7 @@ public class NettyServer {
                     childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
-                            socketChannel.pipeline().addLast(new EchoServerHandler());
+                            socketChannel.pipeline().addLast(new ProtocolServerHandler());
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
@@ -41,10 +42,34 @@ public class NettyServer {
     }
 }
 
+class ProtocolServerHandler extends  ChannelInboundHandlerAdapter {
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+        System.out.println("channelActive");
+        final ByteBuf time = ctx.alloc().buffer(4); // (2)
+        time.writeInt((int) (System.currentTimeMillis() / 1000L + 2208988800L));
+        final ChannelFuture future = ctx.writeAndFlush(time);
+        future.addListener(new ChannelFutureListener() {
+            public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                ctx.close();
+            }
+        });
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
+        ctx.close();
+    }
+}
+
+
 class EchoServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        ctx.write(msg);
+        Command cmd = Command.createCommand(100);
+        cmd.setVersion(100);
+        ctx.write(cmd);
         ctx.flush();
     }
 
