@@ -63,7 +63,6 @@ class ProtocolServerHandler extends  ChannelInboundHandlerAdapter {
     }
 }
 
-
 class EchoServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
