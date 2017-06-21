@@ -105,10 +105,6 @@ public class Command {
 
         result.put(headerData);
 
-        if (this.body != null) {
-            result.put(this.body);
-        }
-
         result.flip();
 
         return result;
