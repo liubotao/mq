@@ -24,7 +24,10 @@ public class NettyServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
-                            socketChannel.pipeline().addLast(new ProtocolServerHandler());
+                            socketChannel.pipeline().addLast(
+                                    new NettyDecoder(),
+                                    new NettyEncoder(),
+                                    new ProtocolServerHandler());
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
@@ -38,31 +41,27 @@ public class NettyServer {
     }
 }
 
-class ProtocolServerHandler extends  ChannelInboundHandlerAdapter {
+class ProtocolServerHandler extends SimpleChannelInboundHandler<Command> {
+
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
         System.out.println("channelActive");
-        final ByteBuf time = ctx.alloc().buffer(4); // (2)
-        time.writeInt((int) (System.currentTimeMillis() / 1000L + 2208988800L));
-        final ChannelFuture future = ctx.writeAndFlush(time);
-        future.addListener(new ChannelFutureListener() {
-            public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                ctx.close();
-            }
-        });
+        Command cmd = Command.createCommand(1);
+        cmd.setCode(200);
+        cmd.setVersion(100);
+        ctx.writeAndFlush(cmd);
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
-        ctx.close();
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Command command) throws Exception {
+
     }
 }
 
 class EchoServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        Command cmd = Command.createCommand(100);
+        Command cmd = Command.createCommand(1);
         cmd.setVersion(100);
         ctx.write(cmd);
         ctx.flush();

@@ -2,16 +2,16 @@ package com.mgtv.mq.network.netty;
 
 import com.mgtv.mq.protocol.Command;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-
-import java.util.Date;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class NettyClient {
+
 
     public static void main(String[] args) throws Exception {
 
@@ -27,7 +27,9 @@ public class NettyClient {
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
-                            socketChannel.pipeline().addLast(new ProtocolClient());
+                            socketChannel.pipeline().addLast(
+                                    new NettyDecoder(),
+                                    new ProtocolClient());
                         }
                     });
 
@@ -39,17 +41,14 @@ public class NettyClient {
     }
 }
 
-class ProtocolClient extends ChannelInboundHandlerAdapter {
+class ProtocolClient extends SimpleChannelInboundHandler<Command> {
+
+    private final static Logger log = LoggerFactory.getLogger(NettyClient.class);
+
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        ByteBuf m = (ByteBuf) msg;
-        try {
-            long currentTimeMillis = (m.readUnsignedInt() - 2208988800L) * 1000L;
-            System.out.println(new Date(currentTimeMillis));
-            ctx.close();
-        } finally {
-            m.release();
-        }
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Command command) throws Exception {
+        log.info("command version :" + command.getVersion());
+        log.info("command code : " + command.getCode());
     }
 
     @Override
