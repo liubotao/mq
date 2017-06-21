@@ -27,6 +27,7 @@ public class NettyClient {
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             socketChannel.pipeline().addLast(
                                     new NettyDecoder(),
+                                    new NettyEncoder(),
                                     new ProtocolClient());
                         }
                     });
@@ -47,6 +48,10 @@ class ProtocolClient extends SimpleChannelInboundHandler<Command> {
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, Command command) throws Exception {
         log.info("command version :" + command.getVersion());
         log.info("command code : " + command.getCode());
+        Command cmd = Command.createCommand(10);
+        cmd.setCode(500);
+        cmd.setVersion(5);
+        channelHandlerContext.writeAndFlush(cmd);
     }
 
     @Override

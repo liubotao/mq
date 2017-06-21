@@ -7,6 +7,8 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class NettyServer {
@@ -43,6 +45,8 @@ public class NettyServer {
 
 class ProtocolServerHandler extends SimpleChannelInboundHandler<Command> {
 
+    final static Logger log = LoggerFactory.getLogger(ProtocolServerHandler.class);
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         System.out.println("channelActive");
@@ -54,7 +58,7 @@ class ProtocolServerHandler extends SimpleChannelInboundHandler<Command> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, Command command) throws Exception {
-
+        log.info("ProtocolServerHandler version :" + command.getVersion() + ", code:" + command.getCode()) ;
     }
 }
 

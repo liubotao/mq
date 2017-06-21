@@ -24,7 +24,6 @@ public class Command {
     public static Command createCommand(int code) {
         Command command = new Command();
         command.code = code;
-        command.version = 2;
         return command;
     }
 
