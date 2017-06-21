@@ -167,7 +167,7 @@ public class Command {
 
     @Override
     public String toString() {
-        return "RemotingCommand [code=" + code + ", version=" + version + ", opaque=" + opaque + ", flag(B)="
+        return "Command [code=" + code + ", version=" + version + ", opaque=" + opaque + ", flag(B)="
                 + Integer.toBinaryString(flag) + ", remark=" + remark + ", extFields=" + extFields + ", serializeType="
                 + serializeType + "]";
     }
