@@ -52,7 +52,6 @@ class ProtocolServerHandler extends SimpleChannelInboundHandler<Command> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("channelActive");
         Command cmd = Command.createCommand(1);
         cmd.setCode(200);
         cmd.setVersion(100);
