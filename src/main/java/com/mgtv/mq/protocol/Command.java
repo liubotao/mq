@@ -97,7 +97,7 @@ public class Command {
 
         length += bodyLength;
 
-        ByteBuffer result = ByteBuffer.allocate(4 + 4 + length - bodyLength);
+        ByteBuffer result = ByteBuffer.allocate(4 + length - bodyLength);
 
         result.putInt(length);
 
