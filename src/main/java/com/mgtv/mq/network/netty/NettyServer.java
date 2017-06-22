@@ -1,28 +1,82 @@
 package com.mgtv.mq.network.netty;
 
+import com.mgtv.mq.common.Pair;
 import com.mgtv.mq.protocol.Command;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class NettyServer {
 
-    public static void main(String[] args) throws Exception {
+public class NettyServer extends NettyAbstract {
+
+    private final static Logger log = LoggerFactory.getLogger(NettyServer.class);
+
+    private final ServerBootstrap serverBootstrap;
+
+    private EventLoopGroup bossLoopGroup = new NioEventLoopGroup();
+
+    private EventLoopGroup workerLoopGroup = new NioEventLoopGroup();
+
+    private final HashMap<Integer, Pair<NettyRequestProcessor, ExecutorService>> processMaps =
+            new HashMap<Integer, Pair<NettyRequestProcessor, ExecutorService>>();
+
+    private DefaultEventExecutorGroup defaultEventExecutorGroup;
+
+    private int port = 0;
+
+    private final ExecutorService publicExecutor;
+
+
+    public NettyServer() {
+        this.serverBootstrap = new ServerBootstrap();
+
+        this.publicExecutor = Executors.newFixedThreadPool(4, new ThreadFactory() {
+            private AtomicInteger threadIndex = new AtomicInteger(0);
+
+            public Thread newThread(Runnable r) {
+                return new Thread(r, "NettyServerPublicExecutor_" + this.threadIndex.incrementAndGet());
+            }
+        });
+    }
+
+    public void registerProcess(int requestCode, NettyRequestProcessor processor, ExecutorService executorService) {
+        Pair<NettyRequestProcessor, ExecutorService> pair = new Pair<NettyRequestProcessor, ExecutorService>(processor, executorService);
+        this.processMaps.put(requestCode, pair);
+    }
+
+    public int localListenPort() {
+        return this.port;
+    }
+
+    public void start() {
         int port = 9999;
 
-        EventLoopGroup bossGroup = new NioEventLoopGroup();
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(
+                2,
+                new ThreadFactory() {
+                    private AtomicInteger threadIndex = new AtomicInteger(0);
+
+                    public Thread newThread(Runnable r) {
+                        return new Thread(r, "NettyServerCodecThread_" + this.threadIndex.incrementAndGet());
+                    }
+                }
+        );
 
         try {
-            ServerBootstrap serverBootstrap = new ServerBootstrap();
-            serverBootstrap.group(bossGroup, workerGroup)
+            this.serverBootstrap.group(bossLoopGroup, workerLoopGroup)
                     .channel(NioServerSocketChannel.class)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
@@ -32,68 +86,32 @@ public class NettyServer {
                                     new NettyEncoder(),
                                     new IdleStateHandler(0, 0, 20),
                                     new NettyConnectManageHandler(),
-                                    new ProtocolServerHandler());
+                                    new NettyServerHandler());
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, false);
             ChannelFuture future = serverBootstrap.bind(port).sync();
             future.channel().closeFuture().sync();
-        } finally {
-            workerGroup.shutdownGracefully();
-            bossGroup.shutdownGracefully();
+            InetSocketAddress address = (InetSocketAddress) future.channel().localAddress();
+            this.port = address.getPort();
+        } catch (InterruptedException e) {
+            throw new RuntimeException("this.serverBootstrap.bind().sync() InterruptedException", e);
         }
     }
-}
 
-class ProtocolServerHandler extends SimpleChannelInboundHandler<Command> {
-
-    final static Logger log = LoggerFactory.getLogger(ProtocolServerHandler.class);
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        Command cmd = Command.createCommand(1);
-        cmd.setCode(200);
-        cmd.setVersion(100);
-        ctx.writeAndFlush(cmd);
+    public void shutDown() {
+        try {
+            this.bossLoopGroup.shutdownGracefully();
+            this.workerLoopGroup.shutdownGracefully();
+        } catch (Exception e) {
+            log.error("NettyServer shutdown Exception, ", e);
+        }
     }
 
-    @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Command command) throws Exception {
-        log.info("ProtocolServerHandler version :" + command.getVersion() + ", code:" + command.getCode());
-    }
-}
-
-class EchoServerHandler extends ChannelInboundHandlerAdapter {
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        Command cmd = Command.createCommand(1);
-        cmd.setVersion(100);
-        ctx.write(cmd);
-        ctx.flush();
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
-        ctx.close();
-    }
-}
-
-class DiscardServerHandler extends ChannelInboundHandlerAdapter {
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        ByteBuf buf = (ByteBuf) msg;
-        byte[] bufferByte = new byte[buf.readableBytes()];
-        buf.readBytes(bufferByte);
-
-        System.out.print(new String(bufferByte, "UTF-8"));
-        buf.release();
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
-        ctx.close();
+    class NettyServerHandler extends SimpleChannelInboundHandler<Command> {
+        protected void channelRead0(ChannelHandlerContext channelHandlerContext, Command command) throws Exception {
+            processMessageReceive(channelHandlerContext, command);
+        }
     }
 }

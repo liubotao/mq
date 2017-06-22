@@ -1,9 +1,13 @@
 package com.mgtv.mq.protocol;
 
+import com.alibaba.fastjson.annotation.JSONField;
+
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 
 public class Command {
+
+    private static final int RPC_TYPE = 0;
 
     private int code;
 
@@ -81,6 +85,21 @@ public class Command {
 
     public void setBody(byte[] body) {
         this.body = body;
+    }
+
+    @JSONField(serialize = false)
+    public CommandType getType() {
+        if (this.isResponseType()) {
+            return CommandType.RESPONSE_COMMAD;
+        }
+
+        return CommandType.REQUEST_COMMAND;
+    }
+
+    @JSONField(serialize = false)
+    public boolean isResponseType() {
+        int bits = 1 << RPC_TYPE;
+        return (this.flag & bits) == bits;
     }
 
     public ByteBuffer encodeHeader() {
