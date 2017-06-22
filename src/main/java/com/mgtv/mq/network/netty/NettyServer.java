@@ -7,6 +7,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +30,8 @@ public class NettyServer {
                             socketChannel.pipeline().addLast(
                                     new NettyDecoder(),
                                     new NettyEncoder(),
+                                    new IdleStateHandler(0, 0, 20),
+                                    new NettyConnectManageHandler(),
                                     new ProtocolServerHandler());
                         }
                     })
@@ -58,7 +61,7 @@ class ProtocolServerHandler extends SimpleChannelInboundHandler<Command> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, Command command) throws Exception {
-        log.info("ProtocolServerHandler version :" + command.getVersion() + ", code:" + command.getCode()) ;
+        log.info("ProtocolServerHandler version :" + command.getVersion() + ", code:" + command.getCode());
     }
 }
 
