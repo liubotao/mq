@@ -31,7 +31,10 @@ public abstract class NettyServiceThread implements Runnable {
 
     public void shutdown(final boolean interrupt) {
         this.stopped = true;
-        log.info("shutdown thread " + this.getServiceName() + " interrupt " + interrupt);
+        log.info("shutdown thread " + this.getServiceName(
+
+
+        ) + " interrupt " + interrupt);
         synchronized (this) {
             if (!this.hasNotified) {
                 this.hasNotified = true;
@@ -74,5 +77,9 @@ public abstract class NettyServiceThread implements Runnable {
 
     public long getJoinTime() {
         return joinTime;
+    }
+
+    public boolean isStopped() {
+        return stopped;
     }
 }

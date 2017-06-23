@@ -5,7 +5,8 @@ import com.mgtv.mq.network.netty.NettyServer;
 public class Main {
 
     public static void main(String[] args) {
-        NettyServer nettyServer = new NettyServer();
+        final SimpleChannelEventListener simpleChannelEventListener = new SimpleChannelEventListener();
+        NettyServer nettyServer = new NettyServer(simpleChannelEventListener);
         nettyServer.start();
     }
 }
