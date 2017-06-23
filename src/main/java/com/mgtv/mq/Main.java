@@ -13,7 +13,6 @@ public class Main {
         ExecutorService remotingExecutor = Executors.newFixedThreadPool(2,
                 new ThreadFactory() {
                     private AtomicInteger threadIndex = new AtomicInteger(0);
-
                     public Thread newThread(Runnable r) {
                         return new Thread(r, "RemotingExecutorThread_" + this.threadIndex.incrementAndGet());
                     }

@@ -10,7 +10,7 @@ public class SimpleChannelEventListener implements NettyChannelEventListener {
     private static final Logger log = LoggerFactory.getLogger(SimpleChannelEventListener.class);
 
     public void onChannelConnect(String remoteAddress, Channel channel) {
-        log.info("SimpleChannelEventListener onChannelConnect");
+        log.info("onChannelConnect remoteAddress [{}]", remoteAddress);
     }
 
     public void onChannelClose(String remoteAddress, Channel channel) {

@@ -31,7 +31,7 @@ public abstract class NettyAbstract {
                 case REQUEST_COMMAND:
                     processRequestCommand(ctx, command);
                     break;
-                case RESPONSE_COMMAD:
+                case RESPONSE_COMMAND:
                     //processResponseCommand(ctx, command);
                     break;
                 default:

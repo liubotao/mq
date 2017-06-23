@@ -104,8 +104,10 @@ public class NettyServer extends NettyAbstract {
                                     new NettyServerHandler());
                         }
                     })
-                    .option(ChannelOption.SO_BACKLOG, 128)
-                    .childOption(ChannelOption.SO_KEEPALIVE, false);
+                    .option(ChannelOption.SO_BACKLOG, 1024)
+                    .option(ChannelOption.SO_REUSEADDR, true)
+                    .option(ChannelOption.SO_KEEPALIVE, false)
+                    .childOption(ChannelOption.TCP_NODELAY, true);
             ChannelFuture future = serverBootstrap.bind(port).sync();
             InetSocketAddress address = (InetSocketAddress) future.channel().localAddress();
             this.port = address.getPort();

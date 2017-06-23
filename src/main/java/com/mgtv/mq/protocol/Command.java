@@ -106,7 +106,7 @@ public class Command {
     @JSONField(serialize = false)
     public CommandType getType() {
         if (this.isResponseType()) {
-            return CommandType.RESPONSE_COMMAD;
+            return CommandType.RESPONSE_COMMAND;
         }
 
         return CommandType.REQUEST_COMMAND;
