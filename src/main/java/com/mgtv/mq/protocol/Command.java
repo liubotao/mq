@@ -31,6 +31,18 @@ public class Command {
         return command;
     }
 
+
+    public static Command createResponseCommand(int code,
+                                                String remark) {
+        Command command = new Command();
+        command.markResponseType();
+        command.setCode(code);
+        command.setRemark(remark);
+        setCommandVersion(command);
+        return command;
+    }
+
+
     public int getCode() {
         return code;
     }
@@ -87,6 +99,10 @@ public class Command {
         this.body = body;
     }
 
+    private static void setCommandVersion(Command command) {
+        command.setVersion(100);
+    }
+
     @JSONField(serialize = false)
     public CommandType getType() {
         if (this.isResponseType()) {
@@ -94,6 +110,11 @@ public class Command {
         }
 
         return CommandType.REQUEST_COMMAND;
+    }
+
+    public void markResponseType() {
+        int bits = 1 << RPC_TYPE;
+        this.flag |= bits;
     }
 
     @JSONField(serialize = false)

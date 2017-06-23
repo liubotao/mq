@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -33,8 +32,6 @@ public class NettyServer extends NettyAbstract {
 
     private EventLoopGroup workerLoopGroup = new NioEventLoopGroup();
 
-    private final HashMap<Integer, Pair<NettyRequestProcessor, ExecutorService>> processMaps =
-            new HashMap<Integer, Pair<NettyRequestProcessor, ExecutorService>>();
 
     private DefaultEventExecutorGroup defaultEventExecutorGroup;
 
@@ -60,7 +57,16 @@ public class NettyServer extends NettyAbstract {
         });
     }
 
-    public void registerProcess(int requestCode, NettyRequestProcessor processor, ExecutorService executorService) {
+    public void registerDefaultProcessor(NettyRequestProcessor nettyRequestProcessor, ExecutorService executor) {
+        this.defaultRequestProcessor = new Pair<NettyRequestProcessor, ExecutorService>(nettyRequestProcessor, executor);
+    }
+
+    public void registerProcessor(int requestCode, NettyRequestProcessor processor, ExecutorService executor) {
+        ExecutorService executorService = executor;
+        if (null == executorService) {
+            executorService = this.publicExecutor;
+        }
+
         Pair<NettyRequestProcessor, ExecutorService> pair = new Pair<NettyRequestProcessor, ExecutorService>(processor, executorService);
         this.processMaps.put(requestCode, pair);
     }

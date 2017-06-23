@@ -1,11 +1,16 @@
 package com.mgtv.mq.network.netty;
 
+import com.mgtv.mq.common.NettyUtil;
+import com.mgtv.mq.common.Pair;
 import com.mgtv.mq.protocol.Command;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public abstract class NettyAbstract {
@@ -14,12 +19,17 @@ public abstract class NettyAbstract {
 
     protected final NettyEventExecutor nettyEventExecutor = new NettyEventExecutor();
 
+    protected Pair<NettyRequestProcessor, ExecutorService> defaultRequestProcessor;
+
+    protected final HashMap<Integer, Pair<NettyRequestProcessor, ExecutorService>> processMaps =
+            new HashMap<Integer, Pair<NettyRequestProcessor, ExecutorService>>(64);
+
     public void processMessageReceive(ChannelHandlerContext ctx, Command msg) throws Exception {
         final Command command = msg;
         if (command != null) {
             switch (command.getType()) {
                 case REQUEST_COMMAND:
-                    //processRequestCommand(ctx, command);
+                    processRequestCommand(ctx, command);
                     break;
                 case RESPONSE_COMMAD:
                     //processResponseCommand(ctx, command);
@@ -27,6 +37,48 @@ public abstract class NettyAbstract {
                 default:
                     break;
             }
+        }
+    }
+
+    public void processRequestCommand(final ChannelHandlerContext ctx, final Command command) {
+        final Pair<NettyRequestProcessor, ExecutorService> matched = this.processMaps.get(command.getCode());
+        final Pair<NettyRequestProcessor, ExecutorService> pair = (null == matched) ? this.defaultRequestProcessor : matched;
+        final int opaque = command.getOpaque();
+
+        if (pair != null) {
+            Runnable run = new Runnable() {
+                public void run() {
+                    try {
+                        final Command responseCommand = pair.getObject1().processRequest(ctx, command);
+                        if (responseCommand != null) {
+                            responseCommand.setOpaque(opaque);
+                            responseCommand.markResponseType();
+
+                            try {
+                                ctx.writeAndFlush(responseCommand);
+                            } catch (Throwable e) {
+                                log.error("process request over, but response failed", e);
+                                log.error(command.toString());
+                                log.error(responseCommand.toString());
+                            }
+                        }
+                    } catch (Throwable e) {
+                        log.error("process request exception", e);
+                    }
+                }
+            };
+
+            try {
+                final NettyRequestTask requestTask = new NettyRequestTask(run, ctx.channel(), command);
+                pair.getObject2().submit(requestTask);
+            } catch (RejectedExecutionException e) {
+                if ((System.currentTimeMillis() % 10000) == 0) {
+                    log.warn("{} too many requests and system thread pool busy , RejectedExecutionException {} , request code "
+                            , NettyUtil.parseChannelRemoteAddress(ctx.channel()), pair.getObject2().toString(), command.getCode());
+                }
+            }
+        } else {
+            String error = " request type " + command.getCode() + " not supported";
         }
     }
 

@@ -45,13 +45,17 @@ class ProtocolClient extends SimpleChannelInboundHandler<Command> {
     private final static Logger log = LoggerFactory.getLogger(NettyClient.class);
 
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Command command) throws Exception {
-        log.info("command version :" + command.getVersion());
-        log.info("command code : " + command.getCode());
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Command cmd = Command.createCommand(10);
         cmd.setCode(500);
         cmd.setVersion(5);
-        channelHandlerContext.writeAndFlush(cmd);
+        ctx.writeAndFlush(cmd);
+    }
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Command command) throws Exception {
+        log.info("command version :" + command.getVersion());
+        log.info("command code : " + command.getCode());
     }
 
     @Override
