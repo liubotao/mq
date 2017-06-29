@@ -132,7 +132,6 @@ public abstract class NettyAbstract {
                     log.warn(this.getServiceName() + " service has exception", e);
                 }
             }
-
             log.info(this.getServiceName() + " service end");
         }
 
