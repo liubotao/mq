@@ -31,7 +31,6 @@ public class Command {
         return command;
     }
 
-
     public static Command createResponseCommand(int code,
                                                 String remark) {
         Command command = new Command();
@@ -41,7 +40,6 @@ public class Command {
         setCommandVersion(command);
         return command;
     }
-
 
     public int getCode() {
         return code;
